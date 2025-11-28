@@ -1,4 +1,5 @@
- //Yap - (9909) Check if item have been removed - 05-09-2019
+//original
+//Yap - (9909) Check if item have been removed - 05-09-2019
             if (entList.Count > 0)
             {
                 foreach (EntitlementOrderItems item in entList)
@@ -11,6 +12,192 @@
                     }
                 }
             }
+---------------------------------------------------------------------------
+  public static MedicItem GetItemByName(string itemName, bool isMedic = false)
+        {
+            using (MySqlConnection conn = new MySqlConnection(ECModel.Instance.ConnString))
+            {
+                MySqlDataReader reader = null;
+                //Yap - (10473) Filter Location - 06-07-2020
+                string _locationFilter = "";
+                if (GlobalVariable.StoreEnable == "1")
+                {
+                    _locationFilter = "AND `a`.`store_id`='" + GlobalVariable.DefaultStoreID + "'"; //Mabels(DAS-1962) Filter by store ID - 10-11-2023
+                }
+                else
+                {
+                    _locationFilter = "AND `a`.`location_id`='" + GlobalVariable.DefaultLocationID + "'";
+                }
+
+                //Yap - (9512) Add Classification, Manufacturer, Brand, UOM, Type, Type ID - 13-12-2018
+                //Yap - (10006) Add isvaccine, repeat interval, repeat interval format - 19-11-2019
+                string str = @"SELECT b.commission,b.unit_cost,`b`.`id` AS `item_id`,`name`,`company`,`category`,`selling_price`,
+SUM(`a`.`buy_qty`) AS `buytotal`,SUM(`a`.`total`) AS `currenttotal`, `is_service`, `dose`, `times`, `day`,`b`.`procedure`,`is_print`,`proposed_qty`,`proposed_remark`,`doseqty`,`timesqty`,`stockcode` ,`alternatecode`,`restock_level`,`ratio`,`tax_code`,is_restrict,
+classification,manufacturer,brand,uom,TYPE,IFNULL((SELECT id FROM medication_type WHERE type_name = b.TYPE LIMIT 1),0) AS 'type_id', b.is_vaccine, b.repeat_interval, b.repeat_interval_format    
+FROM (`stock_items` `b` LEFT JOIN `stock_ledger` `a` ON ((`b`.`id` = `a`.`item_id` " + _locationFilter + @"))) 
+WHERE (`b`.`name`=?ctg AND `b`.`removed`=0 ";
+                if (isMedic == true) //Yap - (9664) Filter Medication item - 26-04-2019
+                {
+                    str = str + " AND `b`.`is_print`=1 ";
+                }
+
+                str = str + " ) GROUP BY `b`.`id` ORDER BY `category`,`name`"; //Yap - (9664) Add group by & order by - 26-04-2019
+                // "SELECT * FROM stock_qty WHERE item_id=?ctg ORDER BY category,name"
+
+                using (MySqlCommand cmd = new MySqlCommand(str, conn))
+                {
+                    cmd.Parameters.Add("?ctg", MySqlDbType.String);
+                    try
+                    {
+                        cmd.Parameters["?ctg"].Value = itemName;
+
+                        conn.Open();
+                        reader = cmd.ExecuteReader();
+
+                        while (reader.Read())
+                        {
+                            double price = reader.IsDBNull(reader.GetOrdinal("selling_price")) ? -1d : reader.GetDouble("selling_price");
+
+                            int is_service = 0;
+                            if (!reader.IsDBNull(reader.GetOrdinal("is_service")))
+                                is_service = reader.GetInt32("is_service");
+
+                            int is_print = 0;
+                            if (!reader.IsDBNull(reader.GetOrdinal("is_print")))
+                                is_print = reader.GetInt32("is_print");
+
+                            int dose = 0;
+                            if (!reader.IsDBNull(reader.GetOrdinal("dose")))
+                                dose = reader.GetInt32("dose");
+
+                            int times = 0;
+                            if (!reader.IsDBNull(reader.GetOrdinal("times")))
+                                times = reader.GetInt32("times");
+
+                            int day = 1;
+                            if (!reader.IsDBNull(reader.GetOrdinal("day")))
+                                day = reader.GetInt32("day");
+
+                            string procedure = string.Empty;
+                            if (!reader.IsDBNull(reader.GetOrdinal("procedure")))
+                            { procedure = reader.GetString("procedure"); }
+
+                            //Kar Lun - (VET Double) 2019-12-05
+                            //int proposedqty = 1;
+                            //if (!reader.IsDBNull(reader.GetOrdinal("proposed_qty")))
+                            //    proposedqty = reader.GetInt32("proposed_qty");
+                            double proposedqty = 1;
+                            if (!reader.IsDBNull(reader.GetOrdinal("proposed_qty")))
+                                proposedqty = reader.GetDouble("proposed_qty");
+
+
+                            string proposedremark = string.Empty;
+                            if (!reader.IsDBNull(reader.GetOrdinal("proposed_remark")))
+                            { proposedremark = reader.GetString("proposed_remark"); }
+
+                            double doseqty = 0;
+                            double timesqty = 0;
+                            if (!(reader.IsDBNull(reader.GetOrdinal("doseqty"))))
+                            { doseqty = reader.GetDouble("doseqty"); }
+                            if (!(reader.IsDBNull(reader.GetOrdinal("timesqty"))))
+                            { timesqty = reader.GetDouble("timesqty"); }
+
+                            string stockcode = string.Empty;
+                            if (!reader.IsDBNull(reader.GetOrdinal("stockcode")))
+                            { stockcode = reader.GetString("stockcode"); }
+
+                            int restock = 0;
+                            if (!reader.IsDBNull(reader.GetOrdinal("restock_level")))
+                            { restock = reader.GetInt32("restock_level"); }
+
+                            int ratio = 0;
+                            if (!reader.IsDBNull(reader.GetOrdinal("ratio")))
+                            { ratio = reader.GetInt32("ratio"); }
+
+                            string taxcode = string.Empty;
+                            if (!reader.IsDBNull(reader.GetOrdinal("tax_code")))
+                            { taxcode = reader.GetString("tax_code"); }
+
+                            int is_restrict = 0;
+                            if (!reader.IsDBNull(reader.GetOrdinal("is_restrict")))
+                            { is_restrict = reader.GetInt32("is_restrict"); }
+
+                            double unit_cost = reader.IsDBNull(reader.GetOrdinal("unit_cost")) ? 0d : reader.GetDouble("unit_cost");
+                            double commission = reader.IsDBNull(reader.GetOrdinal("commission")) ? 0d : reader.GetDouble("commission");
+
+                            //Kar Lun - (VET Double) 2019-12-05
+                            //int currentTotal = reader.IsDBNull(reader.GetOrdinal("currenttotal")) ? 0 : reader.GetInt32("currenttotal");
+                            //int buyTotal = reader.IsDBNull(reader.GetOrdinal("buytotal")) ? 0 : reader.GetInt32("buytotal");
+                            double currentTotal = reader.IsDBNull(reader.GetOrdinal("currenttotal")) ? 0 : reader.GetDouble("currenttotal");
+                            double buyTotal = reader.IsDBNull(reader.GetOrdinal("buytotal")) ? 0 : reader.GetDouble("buytotal");
+
+
+                            //Yap - (9512) Classification - 13-12-2018
+                            string _class = string.Empty;
+                            if (!reader.IsDBNull(reader.GetOrdinal("classification")))
+                            { _class = reader.GetString("classification"); }
+                            //Yap - (9512) Manufacturer - 13-12-2018
+                            string _manufacturer = string.Empty;
+                            if (!reader.IsDBNull(reader.GetOrdinal("manufacturer")))
+                            { _manufacturer = reader.GetString("manufacturer"); }
+                            //Yap - (9512) Brand - 13-12-2018
+                            string _brand = string.Empty;
+                            if (!reader.IsDBNull(reader.GetOrdinal("brand")))
+                            { _brand = reader.GetString("brand"); }
+                            //Yap - (9512) UOM - 13-12-2018
+                            string _uom = string.Empty;
+                            if (!reader.IsDBNull(reader.GetOrdinal("uom")))
+                            { _uom = reader.GetString("uom"); }
+                            //Yap - (9512) Medical Type - 13-12-2018
+                            string _type = string.Empty;
+                            if (!reader.IsDBNull(reader.GetOrdinal("type")))
+                            { _type = reader.GetString("type"); }
+                            Int32 _type_id = reader.GetInt32("type_id");
+                            //Yap - (10006) Is Vaccine - 19-11-2019
+                            int is_vaccine = 0;
+                            if (!reader.IsDBNull(reader.GetOrdinal("is_vaccine")))
+                                is_vaccine = reader.GetInt32("is_vaccine");
+                            //Yap - (10006) Repeat Interval - 19-11-2019
+                            int repeat = 0;
+                            if (!reader.IsDBNull(reader.GetOrdinal("repeat_interval")))
+                                repeat = reader.GetInt32("repeat_interval");
+                            //Yap - (10006) Repeat Interval Format - 19-11-2019
+                            string repeat_format = "";
+                            if (!reader.IsDBNull(reader.GetOrdinal("repeat_interval_format")))
+                                repeat_format = reader.GetString("repeat_interval_format");
+
+                            MedicItem mi = new MedicItem(reader.GetString("item_id"), reader.GetString("name"), reader.GetString("alternatecode"),
+                                reader.GetString("category"), reader.GetString("company"), price, is_service, dose, times, day, procedure, is_print, proposedqty, proposedremark, doseqty, timesqty, stockcode, restock, ratio, taxcode, unit_cost, commission, is_restrict);
+                            mi.SetTotal(
+                                currentTotal,
+                                buyTotal);
+                            //Yap - (9512) Add classification, manufacturer, brand, uom, type, type id - 13-12-2018
+                            mi.Classification = _class;
+                            mi.Manufacturer = _manufacturer;
+                            mi.Brand = _brand;
+                            mi.UOM = _uom;
+                            mi.Medical_Type = _type;
+                            mi.Medical_Type_ID = _type_id;
+                            //Yap - (10006) Add is_vaccine, repeat interval, repeat interval format - 19-11-2019
+                            mi.IsVaccine = is_vaccine;
+                            mi.RepeatInterval = repeat;
+                            mi.RepeatType = repeat_format;
+                            return mi;
+                        }
+                    }
+                    catch (MySqlException ex)
+                    {
+                        Logger.ErrorException("Failed to populate items: ", ex);
+                    }
+                    finally
+                    {
+                        if (reader != null) reader.Close();
+                        if (conn != null) conn.Close();
+                    }
+                }
+                return null;
+            }
+        }
 
 //Enhanced
     //Yap - (9909) Check if item have been removed - 05-09-2019
@@ -41,3 +228,141 @@
                     // Use founditem for your processing...
                 }
             }
+---------------------------------------------------------------------------------------------
+ //Yap - (9664) add to allow filter medication item - 26-04-2019
+        //REI - DAS-2927 FOBIDEN LOOPING 27/11/2025
+        public static MedicItem GetItemByName(string itemName, bool isMedic = false)
+        {
+            // Build SQL components first
+            string _locationFilter = GlobalVariable.StoreEnable == "1"
+                ? $"AND `a`.`store_id`='{GlobalVariable.DefaultStoreID}'"
+                : $"AND `a`.`location_id`='{GlobalVariable.DefaultLocationID}'";
+
+            string medicFilter = isMedic ? " AND `b`.`is_print`=1 " : "";
+
+            // Single string interpolation for entire query
+            string sql = $@"
+        SELECT 
+            b.commission, b.unit_cost, `b`.`id` AS `item_id`, `name`, `company`, `category`, `selling_price`,
+            SUM(`a`.`buy_qty`) AS `buytotal`, SUM(`a`.`total`) AS `currenttotal`, 
+            `is_service`, `dose`, `times`, `day`, `b`.`procedure`, `is_print`, `proposed_qty`, `proposed_remark`,
+            `doseqty`, `timesqty`, `stockcode`, `alternatecode`, `restock_level`, `ratio`, `tax_code`, is_restrict,
+            classification, manufacturer, brand, uom, TYPE, 
+            IFNULL((SELECT id FROM medication_type WHERE type_name = b.TYPE LIMIT 1), 0) AS 'type_id', 
+            b.is_vaccine, b.repeat_interval, b.repeat_interval_format    
+        FROM (`stock_items` `b` 
+        LEFT JOIN `stock_ledger` `a` ON (`b`.`id` = `a`.`item_id` {_locationFilter})) 
+        WHERE `b`.`name` = ?ctg AND `b`.`removed` = 0 {medicFilter}
+        GROUP BY `b`.`id` 
+        ORDER BY `category`, `name`
+        LIMIT 1";  // Added LIMIT 1 since we only expect one result
+
+            using (MySqlConnection conn = new MySqlConnection(ECModel.Instance.ConnString))
+            using (MySqlCommand cmd = new MySqlCommand(sql, conn))
+            {
+                cmd.Parameters.Add("?ctg", MySqlDbType.String).Value = itemName;
+
+                try
+                {
+                    conn.Open();
+                    using (MySqlDataReader reader = cmd.ExecuteReader())
+                    {
+                        return reader.Read() ? CreateMedicItemFromReaderOptimized(reader) : null;
+                    }
+                }
+                catch (MySqlException ex)
+                {
+                    Logger.ErrorException("Failed to populate items: ", ex);
+                    return null;
+                }
+            }
+        }
+
+        // Ultra-optimized reader method for C# 7.3
+        //REI - DAS-2927 FOBIDEN LOOPING 27/11/2025
+        private static MedicItem CreateMedicItemFromReaderOptimized(MySqlDataReader reader)
+        {
+            // Pre-cache all ordinals once
+            var ord = new
+            {
+                ItemId = reader.GetOrdinal("item_id"),
+                Name = reader.GetOrdinal("name"),
+                AlternateCode = reader.GetOrdinal("alternatecode"),
+                Category = reader.GetOrdinal("category"),
+                Company = reader.GetOrdinal("company"),
+                SellingPrice = reader.GetOrdinal("selling_price"),
+                IsService = reader.GetOrdinal("is_service"),
+                Dose = reader.GetOrdinal("dose"),
+                Times = reader.GetOrdinal("times"),
+                Day = reader.GetOrdinal("day"),
+                Procedure = reader.GetOrdinal("procedure"),
+                IsPrint = reader.GetOrdinal("is_print"),
+                ProposedQty = reader.GetOrdinal("proposed_qty"),
+                ProposedRemark = reader.GetOrdinal("proposed_remark"),
+                DoseQty = reader.GetOrdinal("doseqty"),
+                TimesQty = reader.GetOrdinal("timesqty"),
+                StockCode = reader.GetOrdinal("stockcode"),
+                RestockLevel = reader.GetOrdinal("restock_level"),
+                Ratio = reader.GetOrdinal("ratio"),
+                TaxCode = reader.GetOrdinal("tax_code"),
+                IsRestrict = reader.GetOrdinal("is_restrict"),
+                UnitCost = reader.GetOrdinal("unit_cost"),
+                Commission = reader.GetOrdinal("commission"),
+                CurrentTotal = reader.GetOrdinal("currenttotal"),
+                BuyTotal = reader.GetOrdinal("buytotal"),
+                Classification = reader.GetOrdinal("classification"),
+                Manufacturer = reader.GetOrdinal("manufacturer"),
+                Brand = reader.GetOrdinal("brand"),
+                Uom = reader.GetOrdinal("uom"),
+                Type = reader.GetOrdinal("type"),
+                TypeId = reader.GetOrdinal("type_id"),
+                IsVaccine = reader.GetOrdinal("is_vaccine"),
+                RepeatInterval = reader.GetOrdinal("repeat_interval"),
+                RepeatIntervalFormat = reader.GetOrdinal("repeat_interval_format")
+            };
+
+            // Create MedicItem with direct ternary operations (fastest)
+            var mi = new MedicItem(
+                reader.GetString(ord.ItemId),
+                reader.GetString(ord.Name),
+                reader.IsDBNull(ord.AlternateCode) ? "" : reader.GetString(ord.AlternateCode),
+                reader.IsDBNull(ord.Category) ? "" : reader.GetString(ord.Category),
+                reader.IsDBNull(ord.Company) ? "" : reader.GetString(ord.Company),
+                reader.IsDBNull(ord.SellingPrice) ? -1d : reader.GetDouble(ord.SellingPrice),
+                reader.IsDBNull(ord.IsService) ? 0 : reader.GetInt32(ord.IsService),
+                reader.IsDBNull(ord.Dose) ? 0 : reader.GetInt32(ord.Dose),
+                reader.IsDBNull(ord.Times) ? 0 : reader.GetInt32(ord.Times),
+                reader.IsDBNull(ord.Day) ? 1 : reader.GetInt32(ord.Day),
+                reader.IsDBNull(ord.Procedure) ? "" : reader.GetString(ord.Procedure),
+                reader.IsDBNull(ord.IsPrint) ? 0 : reader.GetInt32(ord.IsPrint),
+                reader.IsDBNull(ord.ProposedQty) ? 1.0 : reader.GetDouble(ord.ProposedQty),
+                reader.IsDBNull(ord.ProposedRemark) ? "" : reader.GetString(ord.ProposedRemark),
+                reader.IsDBNull(ord.DoseQty) ? 0.0 : reader.GetDouble(ord.DoseQty),
+                reader.IsDBNull(ord.TimesQty) ? 0.0 : reader.GetDouble(ord.TimesQty),
+                reader.IsDBNull(ord.StockCode) ? "" : reader.GetString(ord.StockCode),
+                reader.IsDBNull(ord.RestockLevel) ? 0 : reader.GetInt32(ord.RestockLevel),
+                reader.IsDBNull(ord.Ratio) ? 0 : reader.GetInt32(ord.Ratio),
+                reader.IsDBNull(ord.TaxCode) ? "" : reader.GetString(ord.TaxCode),
+                reader.IsDBNull(ord.UnitCost) ? 0.0 : reader.GetDouble(ord.UnitCost),
+                reader.IsDBNull(ord.Commission) ? 0.0 : reader.GetDouble(ord.Commission),
+                reader.IsDBNull(ord.IsRestrict) ? 0 : reader.GetInt32(ord.IsRestrict)
+            );
+
+            // Set totals and properties
+            mi.SetTotal(
+                reader.IsDBNull(ord.CurrentTotal) ? 0.0 : reader.GetDouble(ord.CurrentTotal),
+                reader.IsDBNull(ord.BuyTotal) ? 0.0 : reader.GetDouble(ord.BuyTotal)
+            );
+
+            mi.Classification = reader.IsDBNull(ord.Classification) ? "" : reader.GetString(ord.Classification);
+            mi.Manufacturer = reader.IsDBNull(ord.Manufacturer) ? "" : reader.GetString(ord.Manufacturer);
+            mi.Brand = reader.IsDBNull(ord.Brand) ? "" : reader.GetString(ord.Brand);
+            mi.UOM = reader.IsDBNull(ord.Uom) ? "" : reader.GetString(ord.Uom);
+            mi.Medical_Type = reader.IsDBNull(ord.Type) ? "" : reader.GetString(ord.Type);
+            mi.Medical_Type_ID = reader.GetInt32(ord.TypeId);
+            mi.IsVaccine = reader.IsDBNull(ord.IsVaccine) ? 0 : reader.GetInt32(ord.IsVaccine);
+            mi.RepeatInterval = reader.IsDBNull(ord.RepeatInterval) ? 0 : reader.GetInt32(ord.RepeatInterval);
+            mi.RepeatType = reader.IsDBNull(ord.RepeatIntervalFormat) ? "" : reader.GetString(ord.RepeatIntervalFormat);
+
+            return mi;
+        }
