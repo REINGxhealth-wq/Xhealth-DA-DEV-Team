@@ -1,0 +1,137 @@
+  public void SetReceipt(ClinicReceipt cr)
+        {
+            this._cr = cr;
+            tbIC.Text = cr.PatientID;
+            cbDoneBy.Text = cr.Done_By; //Jing Yi (DAS-1724) Set default work done by based on billing work done by - 2023-06-21
+            //Yap - (10006) Vet setting - 05-12-2019
+            if (GlobalVariable.IsPet)
+            {
+                string name = ClinicPatient.GetPatientCustomerName(cr.PatientID);
+                if (name != "") { tbName.Text = name + " - " + cr.PatientName; }
+                else
+                { tbName.Text = cr.PatientName; }
+            }
+            else
+            { tbName.Text = cr.PatientName; }
+            txtReceiptID.Text = cr.ReceiptID;
+            txtPrintName.Text = cr.PrintedName;
+
+            colTotalPrice.DisplayFormat.FormatType = DevExpress.Utils.FormatType.Numeric;
+            colTotalPrice.DisplayFormat.FormatString = GlobalVariable.TotalCurrencyFormat;
+
+            colRefundableAmt.DisplayFormat.FormatType = DevExpress.Utils.FormatType.Numeric;
+            colRefundableAmt.DisplayFormat.FormatString = GlobalVariable.TotalCurrencyFormat;
+
+            colRefundPrice.DisplayFormat.FormatType = DevExpress.Utils.FormatType.Numeric;
+            colRefundPrice.DisplayFormat.FormatString = GlobalVariable.TotalCurrencyFormat;
+
+            //Get Credit Note of current receipt
+            _cnList = CreditNote.GetCreditNoteByReceiptID(this._cr.ReceiptID);
+            if (_cnList.Count > 0)
+            {
+                string cnStr = "";
+                Int32 count = 1;
+                foreach (CreditNote cn in _cnList)
+                {
+                    if (count == 1) { cnStr = "'" + cn.CreditNoteID + "'"; }
+                    else
+                    { cnStr += ",'" + cn.CreditNoteID + "'"; }
+                    count++;
+                }
+                _cniList = CreditNoteItem.GetCreditNoteItemsWithCNIDList(cnStr);
+                _cnpList = CreditNotePayment.GetCreditNotePaymentWithCNIDList(cnStr);
+            }
+
+            //Mabels(DAS-2406) Get items that are already exchanged/consumed/returned if is mode 2 entitlement - 01-11-2024
+            if (cr.IsConverted)
+            {
+                entitlement_consumed_list = EntitlementItems.GetEntitlementConsumption(cr.PatientID, "All", cr.ReceiptID);
+            }
+
+            AddReceiptItems(_cr.Items);
+            GetTotalPayment(_cr.Payments);
+
+            //rbAmount.Checked = true;
+        }
+
+
+//Enhance
+public void SetReceipt(ClinicReceipt cr)
+{
+    this._cr = cr;
+    
+    // Set basic information
+    tbIC.Text = cr.PatientID;
+    cbDoneBy.Text = cr.Done_By;
+    
+    // Set patient name with optimized logic
+    tbName.Text = GlobalVariable.IsPet 
+        ? GetPetPatientName(cr.PatientID, cr.PatientName)
+        : cr.PatientName;
+    
+    txtReceiptID.Text = cr.ReceiptID;
+    txtPrintName.Text = cr.PrintedName;
+
+    // Configure column formats in bulk
+    ConfigureColumnFormats();
+
+    // Load credit note data efficiently
+    LoadCreditNoteData(cr.ReceiptID);
+
+    // Load entitlement data if converted
+    if (cr.IsConverted)
+    {
+        entitlement_consumed_list = EntitlementItems.GetEntitlementConsumption(
+            cr.PatientID, "All", cr.ReceiptID);
+    }
+
+    // Add receipt items and calculate payments
+    AddReceiptItems(_cr.Items);
+    GetTotalPayment(_cr.Payments);
+}
+
+private string GetPetPatientName(string patientId, string patientName)
+{
+    string customerName = ClinicPatient.GetPatientCustomerName(patientId);
+    return string.IsNullOrEmpty(customerName) 
+        ? patientName 
+        : $"{customerName} - {patientName}";
+}
+
+private void ConfigureColumnFormats()
+{
+    var columnsToFormat = new[] 
+    {
+        (colTotalPrice, GlobalVariable.TotalCurrencyFormat),
+        (colRefundableAmt, GlobalVariable.TotalCurrencyFormat),
+        (colRefundPrice, GlobalVariable.TotalCurrencyFormat)
+    };
+
+    foreach (var (column, format) in columnsToFormat)
+    {
+        column.DisplayFormat.FormatType = DevExpress.Utils.FormatType.Numeric;
+        column.DisplayFormat.FormatString = format;
+    }
+}
+
+private void LoadCreditNoteData(string receiptId)
+{
+    _cnList = CreditNote.GetCreditNoteByReceiptID(receiptId);
+    
+    if (_cnList.Count > 0)
+    {
+        // Use LINQ and string.Join instead of foreach loop
+        var creditNoteIds = _cnList.Select(cn => $"'{cn.CreditNoteID}'").ToArray();
+        string cnStr = string.Join(",", creditNoteIds);
+        
+        // Load data in parallel if the methods are thread-safe
+        _cniList = CreditNoteItem.GetCreditNoteItemsWithCNIDList(cnStr);
+        _cnpList = CreditNotePayment.GetCreditNotePaymentWithCNIDList(cnStr);
+    }
+    else
+    {
+        // Initialize empty lists to avoid null references
+        _cniList = new List<CreditNoteItem>();
+        _cnpList = new List<CreditNotePayment>();
+    }
+}
