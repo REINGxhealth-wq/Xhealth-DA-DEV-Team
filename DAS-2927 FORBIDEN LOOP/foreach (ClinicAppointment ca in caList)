@@ -1,0 +1,187 @@
+// foreach (ClinicAppointment ca in caList) 
+//original
+ private void dgvAptAuditTrail_RowEnter(object sender, DataGridViewCellEventArgs e)
+        {
+            if (e.RowIndex >= 0)
+            {
+                List<ClinicAppointment> caList = null;
+                if (aptDict.Count != 0)
+                {
+                    caList = aptDict[Convert.ToInt64(dgvAptAuditTrail.Rows[e.RowIndex].Cells[15].Value.ToString())];
+                }               
+                dgvAptAuditTrailDetail.Rows.Clear();
+
+                Int32 num = 1;
+                if (caList != null && caList.Count > 0)
+                {
+                    foreach (ClinicAppointment ca in caList)
+
+//Enhanced
+//REI DAS-2927 Forbidden call of looping
+        private void dgvAptAuditTrail_RowEnter(object sender, DataGridViewCellEventArgs e)
+        {
+            if (e.RowIndex < 0) return;
+
+            var caList = aptDict.Count != 0
+                ? aptDict[Convert.ToInt64(dgvAptAuditTrail.Rows[e.RowIndex].Cells[15].Value.ToString())]
+                : null;
+
+            dgvAptAuditTrailDetail.Rows.Clear();
+
+            if (caList == null || caList.Count == 0) return;
+
+            var zeroTimeSpan = TimeSpan.Parse("00:00:00");
+
+            // PROPER LINQ implementation - ca variable is properly defined in the lambda
+            var rows = caList.Select((ca, index) =>
+            {
+                string endtime = ca.EstDuration != zeroTimeSpan
+                    ? ca.AppointmentDate.Add(ca.EstDuration).ToString(GlobalVariable.TimeFormat)
+                    : "";
+
+                string priority = priorityDict.ContainsKey(ca.Priority_ID)
+                    ? priorityDict[ca.Priority_ID].ToString()
+                    : "";
+
+                return new object[]
+                {
+            index + 1,                       // num
+            ca.Modified_Date,
+            ca.History_Status,
+            ca.AppointmentDate,
+            ca.AppointmentDate,
+            ca.EstDuration.TotalMinutes,
+            endtime,
+            ca.Type,
+            ca.Root_Cause,
+            priority,
+            ca.Reason,
+            ca.NextAction,
+            ca.Resource,
+            ca.Location,
+            ca.Username,
+            ca.Reminder,
+            ca.TreatmentPlannerID,
+            ca.Ref_ID,
+            ca.ID
+                };
+            }).ToArray();
+
+            // Add rows individually since AddRange expects DataGridViewRow[]
+            foreach (var row in rows)
+            {
+                dgvAptAuditTrailDetail.Rows.Add(row);
+            }
+        }
+        //REI DAS-2927 Forbidden call of looping
+        private void LoadAuditTrailDetail(Int64 aptID)
+        {
+            // Early exit if no data
+            if (aptDict.Count == 0 || !aptDict.TryGetValue(aptID, out List<ClinicAppointment> caList))
+            {
+                dgvAptAuditTrailDetail.Rows.Clear();
+                return;
+            }
+
+            dgvAptAuditTrailDetail.SuspendLayout();
+            dgvAptAuditTrailDetail.Rows.Clear();
+
+            try
+            {
+                if (caList?.Count > 0)
+                {
+                    var zeroTimeSpan = TimeSpan.Parse("00:00:00");
+                    int rowNumber = 1;
+
+                    foreach (var ca in caList)
+                    {
+                        string endtime = ca.EstDuration != zeroTimeSpan
+                            ? ca.AppointmentDate.Add(ca.EstDuration).ToString(GlobalVariable.TimeFormat)
+                            : "";
+
+                        string priority = priorityDict.TryGetValue(ca.Priority_ID, out var priorityValue)
+                            ? priorityValue.ToString()
+                            : "";
+
+                        dgvAptAuditTrailDetail.Rows.Add(
+                            rowNumber++, ca.Modified_Date, ca.History_Status, ca.AppointmentDate, ca.AppointmentDate,
+                            ca.EstDuration.TotalMinutes, endtime, ca.Type, ca.Root_Cause, priority, ca.Reason,
+                            ca.NextAction, ca.Resource, ca.Location, ca.Username, ca.Reminder,
+                            ca.TreatmentPlannerID, ca.Ref_ID, ca.ID
+                        );
+                    }
+                }
+            }
+            finally
+            {
+                dgvAptAuditTrailDetail.ResumeLayout();
+            }
+        }
+
+        //Yap - For Deleted Appointment - 18-01-2018
+        //REI DAS-2927 Forbidden call of looping
+        private void dgvDeletedAuditTrail_RowEnter(object sender, DataGridViewCellEventArgs e)
+        {
+            if (e.RowIndex < 0) return;
+
+            // Early exit if no data
+            if (aptDict.Count == 0)
+            {
+                dgvAptAuditTrailDetail.Rows.Clear();
+                return;
+            }
+
+            var key = Convert.ToInt64(dgvDeletedAuditTrail.Rows[e.RowIndex].Cells[15].Value.ToString());
+
+            if (!aptDict.TryGetValue(key, out List<ClinicAppointment> caList) || caList?.Count == 0)
+            {
+                dgvAptAuditTrailDetail.Rows.Clear();
+                return;
+            }
+
+            dgvAptAuditTrailDetail.SuspendLayout();
+            dgvAptAuditTrailDetail.Rows.Clear();
+
+            try
+            {
+                var zeroTimeSpan = TimeSpan.Parse("00:00:00");
+                int rowNumber = 1;
+
+                foreach (var ca in caList)
+                {
+                    string endtime = ca.EstDuration != zeroTimeSpan
+                        ? ca.AppointmentDate.Add(ca.EstDuration).ToString(GlobalVariable.TimeFormat)
+                        : "";
+
+                    string priority = priorityDict.TryGetValue(ca.Priority_ID, out var priorityValue)
+                        ? priorityValue.ToString()
+                        : "";
+
+                    dgvAptAuditTrailDetail.Rows.Add(
+                        rowNumber++,
+                        ca.Modified_Date,
+                        ca.History_Status,
+                        ca.AppointmentDate,
+                        ca.AppointmentDate,
+                        ca.EstDuration.TotalMinutes,
+                        endtime,
+                        ca.Type,
+                        ca.Root_Cause,
+                        priority,
+                        ca.Reason,
+                        ca.NextAction,
+                        ca.Resource,
+                        ca.Location,
+                        ca.Username,
+                        ca.Reminder,
+                        ca.TreatmentPlannerID,
+                        ca.Ref_ID,
+                        ca.ID
+                    );
+                }
+            }
+            finally
+            {
+                dgvAptAuditTrailDetail.ResumeLayout();
+            }
+        }
