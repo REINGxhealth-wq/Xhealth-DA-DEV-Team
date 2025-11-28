@@ -15,7 +15,7 @@
                 }
             }
 
-//Enhanced
+//Enhanced - Collect all of the data in one time 
   //REI - DAS-2927 FOBIDEN LOOPING 27/11/2025
             if (entList.Count > 0)
             {
@@ -43,3 +43,4 @@
                     // Use founditem for your processing...
                 }
             }
+
