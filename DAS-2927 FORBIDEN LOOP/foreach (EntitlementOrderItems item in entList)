@@ -1,0 +1,43 @@
+ //Yap - (9909) Check if item have been removed - 05-09-2019
+            if (entList.Count > 0)
+            {
+                foreach (EntitlementOrderItems item in entList)
+                {
+                    MedicItem founditem = Data.Stock.GetItemByName(item.Item_Name);
+                    if (founditem == null)
+                    {
+                        MessageBox.Show("Not able to exchange item [" + item.Item_Name + "] due to it had been removed.", "Warning", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                        return;
+                    }
+                }
+            }
+
+//Enhanced
+    //Yap - (9909) Check if item have been removed - 05-09-2019
+            //REI - DAS-2927 FOBIDEN LOOPING 27/11/2025
+            if (entList.Count > 0)
+            {
+                // Get all unique item names and fetch items in one go
+                var itemNames = entList.Select(item => item.Item_Name).Distinct();
+                var itemCache = itemNames.ToDictionary(
+                    name => name,
+                    name => Data.Stock.GetItemByName(name)
+                );
+
+                // Single LINQ check to find first missing item
+                var missingItem = entList.FirstOrDefault(item => itemCache[item.Item_Name] == null);
+
+                if (missingItem != null)
+                {
+                    MessageBox.Show("Not able to exchange item [" + missingItem.Item_Name + "] due to it had been removed.", "Warning", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    return;
+                }
+
+                // All items exist - continue with your processing
+                // If you need to use the found items later:
+                foreach (EntitlementOrderItems item in entList)
+                {
+                    MedicItem founditem = itemCache[item.Item_Name];
+                    // Use founditem for your processing...
+                }
+            }
