@@ -1,4 +1,6 @@
-  public void SetReceipt(ClinicReceipt cr)
+//creditnoteentryform.cs
+
+public void SetReceipt(ClinicReceipt cr)
         {
             this._cr = cr;
             tbIC.Text = cr.PatientID;
