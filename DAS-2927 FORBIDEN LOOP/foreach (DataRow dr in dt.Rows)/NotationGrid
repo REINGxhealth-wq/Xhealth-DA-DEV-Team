@@ -1,0 +1,409 @@
+
+        private void tabmain_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            if (tabmain.SelectedTab.Name == "tbhistory")
+            {
+                //GET HISTORY FROM DB
+                txtsummary.Text = "";
+                string prevdate = string.Empty;
+                DataTable DT = DentalChartNotation.GetNotationHistory(CurrentPatientIC, _ToothNumber, _TooothType);
+                if (DT.Rows.Count > 0)
+                {
+                    foreach (DataRow dr in DT.Rows)
+                    {
+                        string _Gendate = dr["generated_date"].ToString();
+                        string _Title = dr["notationtitle"].ToString();
+                        string _ToothType = dr["toothtype"].ToString();
+                        string _NotationQuadrent = dr["notationquadrent"].ToString();
+                        string _Notation = dr["notation"].ToString();
+                        string[] NotationSettings = _Notation.Split('|');
+                        string _RegionType = NotationSettings.GetValue(0).ToString();
+                        string _Region = NotationSettings.GetValue(1).ToString();
+                        string _RegionDesc = string.Empty;
+                        if (_RegionType == "O")
+                        {
+                            //Modified BY ARAVIND ON 26 SEP 13
+                            //_RegionDesc = "Whole Tooth"; 
+                            _RegionDesc = "";
+                        }
+                        else if (_RegionType == "R")
+                        {
+                            //_RegionDesc = "Surface"; 
+                            switch (_NotationQuadrent)
+                            {
+                                case "UPPER RIGHT":
+                                    if (_ToothType == "A")
+                                    {
+                                        switch (_Region)
+                                        {
+                                            case "L":
+                                                _RegionDesc = "Distal";
+                                                break;
+                                            case "R":
+                                                _RegionDesc = "Mesial";
+                                                break;
+                                            case "T":
+                                                _RegionDesc = "Buccal";
+                                                break;
+                                            case "B":
+                                                _RegionDesc = "Palatal";
+                                                break;
+                                            case "C":
+                                                _RegionDesc = "Occlusal";
+                                                break;
+                                            default:
+
+                                                break;
+                                        }
+                                    }
+                                    else if (_ToothType == "B")
+                                    {
+                                        switch (_Region)
+                                        {
+                                            case "L":
+                                                _RegionDesc = "Distal";
+                                                break;
+                                            case "R":
+                                                _RegionDesc = "Mesial";
+                                                break;
+                                            case "T":
+                                                _RegionDesc = "Labial";
+                                                break;
+                                            case "B":
+                                                _RegionDesc = "Palatal";
+                                                break;
+                                            case "C":
+                                                _RegionDesc = "Incisal";
+                                                break;
+                                            default:
+
+                                                break;
+                                        }
+                                    }
+                                    break;
+                                case "UPPER LEFT":
+                                    if (_ToothType == "A")
+                                    {
+                                        switch (_Region)
+                                        {
+                                            case "L":
+                                                _RegionDesc = "Mesial";
+                                                break;
+                                            case "R":
+                                                _RegionDesc = "Distal";
+                                                break;
+                                            case "T":
+                                                _RegionDesc = "Buccal";
+                                                break;
+                                            case "B":
+                                                _RegionDesc = "Palatal";
+                                                break;
+                                            case "C":
+                                                _RegionDesc = "Occlusal";
+                                                break;
+                                            default:
+
+                                                break;
+                                        }
+                                    }
+                                    else if (_ToothType == "B")
+                                    {
+                                        switch (_Region)
+                                        {
+                                            case "L":
+                                                _RegionDesc = "Mesial";
+                                                break;
+                                            case "R":
+                                                _RegionDesc = "Distal";
+                                                break;
+                                            case "T":
+                                                _RegionDesc = "Labial";
+                                                break;
+                                            case "B":
+                                                _RegionDesc = "Palatal";
+                                                break;
+                                            case "C":
+                                                _RegionDesc = "Incisal";
+                                                break;
+                                            default:
+
+                                                break;
+                                        }
+                                    }
+                                    break;
+                                case "LOWER RIGHT":
+                                    if (_ToothType == "A")
+                                    {
+                                        switch (_Region)
+                                        {
+                                            case "L":
+                                                _RegionDesc = "Distal";
+                                                break;
+                                            case "R":
+                                                _RegionDesc = "Mesial";
+                                                break;
+                                            case "T":
+                                                _RegionDesc = "Lingual";
+                                                break;
+                                            case "B":
+                                                _RegionDesc = "Buccal";
+                                                break;
+                                            case "C":
+                                                _RegionDesc = "Occlusal";
+                                                break;
+                                            default:
+
+                                                break;
+                                        }
+                                    }
+                                    else if (_ToothType == "B")
+                                    {
+                                        switch (_Region)
+                                        {
+                                            case "L":
+                                                _RegionDesc = "Distal";
+                                                break;
+                                            case "R":
+                                                _RegionDesc = "Mesial";
+                                                break;
+                                            case "T":
+                                                _RegionDesc = "Lingual";
+                                                break;
+                                            case "B":
+                                                _RegionDesc = "Labial";
+                                                break;
+                                            case "C":
+                                                _RegionDesc = "Incisal";
+                                                break;
+                                            default:
+
+                                                break;
+                                        }
+                                    }
+                                    break;
+                                case "LOWER LEFT":
+                                    if (_ToothType == "A")
+                                    {
+                                        switch (_Region)
+                                        {
+                                            case "L":
+                                                _RegionDesc = "Mesial";
+                                                break;
+                                            case "R":
+                                                _RegionDesc = "Distal";
+                                                break;
+                                            case "T":
+                                                _RegionDesc = "Lingual";
+                                                break;
+                                            case "B":
+                                                _RegionDesc = "Buccal";
+                                                break;
+                                            case "C":
+                                                _RegionDesc = "Occlusal";
+                                                break;
+                                            default:
+
+                                                break;
+                                        }
+                                    }
+                                    else if (_ToothType == "B")
+                                    {
+                                        switch (_Region)
+                                        {
+                                            case "L":
+                                                _RegionDesc = "Mesial";
+                                                break;
+                                            case "R":
+                                                _RegionDesc = "Distal";
+                                                break;
+                                            case "T":
+                                                _RegionDesc = "Lingual";
+                                                break;
+                                            case "B":
+                                                _RegionDesc = "Labial";
+                                                break;
+                                            case "C":
+                                                _RegionDesc = "Incisal";
+                                                break;
+                                            default:
+
+                                                break;
+                                        }
+                                    }
+                                    break;
+                                default:
+
+                                    break;
+                            }
+                        }
+                        string _Remarks = dr["remarks"].ToString();
+                        string _IssuedBy = string.Empty;
+                        object issuedby_value = dr["username"];
+                        if (issuedby_value == DBNull.Value)
+                        { _IssuedBy = ""; }
+                        else
+                        { _IssuedBy = (string)issuedby_value; }
+                        if (txtsummary.Text == "")
+                        {
+                            txtsummary.SelectionAlignment = HorizontalAlignment.Center;
+                            txtsummary.SelectionColor = Color.Red;
+                            txtsummary.SelectionFont = new Font("Arial", 9.75F, FontStyle.Bold);
+                            txtsummary.AppendText(Convert.ToDateTime(_Gendate).ToString("dd MMM yyyy [" + GlobalVariable.TimeFormat + "]"));
+                            txtsummary.AppendText(System.Environment.NewLine);
+                            txtsummary.SelectionBackColor = Color.White;
+                            txtsummary.SelectionAlignment = HorizontalAlignment.Left;
+                            //Modified BY ARAVIND ON 26 SEP 13
+                            if (_RegionDesc.Trim() != "")
+                            {
+                                txtsummary.AppendText(_RegionDesc);
+                                txtsummary.AppendText(" : ");
+                            }
+                            txtsummary.AppendText(_Title);
+                            txtsummary.AppendText(" - ");
+                            txtsummary.AppendText(_Remarks);
+                            txtsummary.AppendText(" - Issued by - ");
+                            txtsummary.AppendText(_IssuedBy);
+                        }
+                        else
+                        {
+                            if (prevdate != _Gendate)
+                            {
+                                txtsummary.AppendText(System.Environment.NewLine);
+                                txtsummary.SelectionAlignment = HorizontalAlignment.Center;
+                                txtsummary.SelectionColor = Color.Red;
+                                txtsummary.SelectionFont = new Font("Arial", 9.75F, FontStyle.Bold);
+                                txtsummary.AppendText(Convert.ToDateTime(_Gendate).ToString("dd MMM yyyy [" + GlobalVariable.TimeFormat + "]"));
+                            }
+                            txtsummary.AppendText(System.Environment.NewLine);
+                            txtsummary.SelectionBackColor = Color.White;
+                            txtsummary.SelectionAlignment = HorizontalAlignment.Left;
+                            //Modified BY ARAVIND ON 26 SEP 13
+                            if (_RegionDesc.Trim() != "")
+                            {
+                                txtsummary.AppendText(_RegionDesc);
+                                txtsummary.AppendText(" : ");
+                            }
+                            txtsummary.AppendText(_Title);
+                            txtsummary.AppendText(" - ");
+                            txtsummary.AppendText(_Remarks);
+                            txtsummary.AppendText(" - Issued by - ");
+                            txtsummary.AppendText(_IssuedBy);
+                        }
+                        prevdate = _Gendate;
+                    }
+                }
+            }
+        }
+
+//Enhanced
+private void tabmain_SelectedIndexChanged(object sender, EventArgs e)
+{
+    if (tabmain.SelectedTab.Name != "tbhistory")
+        return;
+
+    txtsummary.Clear();
+    string previousDate = string.Empty;
+
+    DataTable dt = DentalChartNotation.GetNotationHistory(CurrentPatientIC, _ToothNumber, _TooothType);
+    if (dt.Rows.Count == 0)
+        return;
+
+    foreach (DataRow row in dt.Rows)
+    {
+        string generatedDate = row["generated_date"].ToString();
+        string title = row["notationtitle"].ToString();
+        string toothType = row["toothtype"].ToString();
+        string quadrant = row["notationquadrent"].ToString();
+        string notation = row["notation"].ToString();
+        string remarks = row["remarks"].ToString();
+        string issuedBy = row["username"] == DBNull.Value ? "" : row["username"].ToString();
+
+        // Extract region values
+        string[] parts = notation.Split('|');
+        string regionType = parts.Length > 0 ? parts[0] : "";
+        string region = parts.Length > 1 ? parts[1] : "";
+
+        // Get region description (optimized into a method)
+        string regionDesc = GetRegionDescription(regionType, region, quadrant, toothType);
+
+        // Print date header (only once per date)
+        if (txtsummary.TextLength == 0 || previousDate != generatedDate)
+        {
+            AppendCenteredDate(generatedDate);
+        }
+
+        // Append line
+        AppendHistoryLine(regionDesc, title, remarks, issuedBy);
+
+        previousDate = generatedDate;
+    }
+}
+
+
+// -------------------------------------------------------------
+//  REGION DESCRIPTION LOOKUP (Clean + Modern)
+// -------------------------------------------------------------
+private string GetRegionDescription(string regionType, string region, string quadrant, string toothType)
+{
+    if (regionType == "O")  // Whole tooth
+        return "";
+
+    if (regionType != "R")
+        return "";
+
+    // Mapping for A-type (Premolar/Molar)
+    var regionMapA = new Dictionary<string, string>
+    {
+        {"L", "Distal"}, {"R", "Mesial"}, {"T", "Buccal"}, {"B", "Palatal"}, {"C", "Occlusal"}
+    };
+
+    // Mapping for B-type (Incisor)
+    var regionMapB = new Dictionary<string, string>
+    {
+        {"L", "Distal"}, {"R", "Mesial"}, {"T", "Labial"}, {"B", "Palatal"}, {"C", "Incisal"}
+    };
+
+    bool isUpperLeft = quadrant == "UPPER LEFT";
+    bool isLowerLeft = quadrant == "LOWER LEFT";
+
+    // LEFT side quadrants reverse L/R
+    if (isUpperLeft || isLowerLeft)
+    {
+        if (region == "L") region = "R";
+        else if (region == "R") region = "L";
+    }
+
+    var lookup = toothType == "A" ? regionMapA : regionMapB;
+
+    return lookup.ContainsKey(region) ? lookup[region] : "";
+}
+
+
+// -------------------------------------------------------------
+//  UI APPENDING HELPERS (Clean + Reusable)
+// -------------------------------------------------------------
+private void AppendCenteredDate(string dateStr)
+{
+    txtsummary.SelectionAlignment = HorizontalAlignment.Center;
+    txtsummary.SelectionColor = Color.Red;
+    txtsummary.SelectionFont = new Font("Arial", 9.75F, FontStyle.Bold);
+
+    txtsummary.AppendText(Convert.ToDateTime(dateStr)
+        .ToString($"dd MMM yyyy [{GlobalVariable.TimeFormat}]"));
+
+    txtsummary.AppendText(Environment.NewLine);
+
+    txtsummary.SelectionAlignment = HorizontalAlignment.Left;
+    txtsummary.SelectionColor = Color.Black;
+    txtsummary.SelectionFont = txtsummary.Font;
+}
+
+private void AppendHistoryLine(string regionDesc, string title, string remarks, string issuedBy)
+{
+    txtsummary.AppendText(Environment.NewLine);
+
+    if (!string.IsNullOrWhiteSpace(regionDesc))
+        txtsummary.AppendText($"{regionDesc} : ");
+
+    txtsummary.AppendText($"{title} - {remarks} - Issued by - {issuedBy}");
+}
