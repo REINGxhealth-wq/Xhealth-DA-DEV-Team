@@ -1,0 +1,82 @@
+ private void btnsms_Click(object sender, EventArgs e)
+        {
+            if (ClinicSms.IsNetConnected())
+            {
+                List<ClinicHospitalization> lstp = lsHospitalize;
+
+                //Jing Yi (DAS-1606) Check if any filtering is applied by user - 2023-04-21
+                if (gvHospitalizedList.ActiveFilterCriteria != null)
+                {
+                    var filteredDataView = new DataView(gcHospitalizedList.DataSource as DataTable);
+                    filteredDataView.RowFilter = DevExpress.Data.Filtering.CriteriaToWhereClauseHelper.GetDataSetWhere(gvHospitalizedList.ActiveFilterCriteria);
+                    DataTable dt = filteredDataView.ToTable();
+                    List<string> filtered_id = new List<string>(); //To store the list of appt id that is filtered
+                    foreach (DataRow dr in dt.Rows)
+                    {
+                        filtered_id.Add(dr["id"].ToString());
+                    }
+                    lstp = lstp.Where(i => filtered_id.Contains(i.ID)).ToList(); //Only keep the appts that is filtered 
+                }
+
+                if (lstp.Count > 0)
+                {
+                    using (Sendsmsfrm smsfrm = new Sendsmsfrm(lstp, 7))
+                    {
+                        smsfrm.ShowDialog(this);
+                    }
+                }
+                else
+                {
+                    MessageBox.Show("List is empty,please filter again", "Warning", MessageBoxButtons.OK, MessageBoxIcon.Exclamation);
+                    return;
+                }
+            }
+            else
+            {
+                MessageBox.Show("No internet connected to your Computer/Laptop", "Warning", MessageBoxButtons.OK, MessageBoxIcon.Exclamation);
+                return;
+            }
+        }
+
+//Enhanced
+ //REI DAS-2927 1/12/2025
+        private void btnsms_Click(object sender, EventArgs e)
+        {
+            if (ClinicSms.IsNetConnected())
+            {
+                List<ClinicHospitalization> lstp = lsHospitalize;
+
+                //Jing Yi (DAS-1606) Check if any filtering is applied by user - 2023-04-21
+                if (gvHospitalizedList.ActiveFilterCriteria != null)
+                {
+                    var filteredDataView = new DataView(gcHospitalizedList.DataSource as DataTable);
+                    filteredDataView.RowFilter = DevExpress.Data.Filtering.CriteriaToWhereClauseHelper.GetDataSetWhere(gvHospitalizedList.ActiveFilterCriteria);
+                    DataTable dt = filteredDataView.ToTable();
+
+                    // Optimized: Use LINQ to convert DataRows to List<string>
+                    List<string> filtered_id = dt.AsEnumerable()
+                                                .Select(dr => dr["id"].ToString())
+                                                .ToList();
+
+                    lstp = lstp.Where(i => filtered_id.Contains(i.ID)).ToList(); //Only keep the appts that is filtered 
+                }
+
+                if (lstp.Count > 0)
+                {
+                    using (Sendsmsfrm smsfrm = new Sendsmsfrm(lstp, 7))
+                    {
+                        smsfrm.ShowDialog(this);
+                    }
+                }
+                else
+                {
+                    MessageBox.Show("List is empty,please filter again", "Warning", MessageBoxButtons.OK, MessageBoxIcon.Exclamation);
+                    return;
+                }
+            }
+            else
+            {
+                MessageBox.Show("No internet connected to your Computer/Laptop", "Warning", MessageBoxButtons.OK, MessageBoxIcon.Exclamation);
+                return;
+            }
+        }
