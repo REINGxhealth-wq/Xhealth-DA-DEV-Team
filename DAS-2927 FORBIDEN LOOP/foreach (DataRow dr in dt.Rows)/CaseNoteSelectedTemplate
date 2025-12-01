@@ -1,0 +1,105 @@
+  private void LoadHandNoteImage()
+        {
+            if (isLoadFromFile == true)//Yap - (9399) If load from folder - 03-10-2018
+            {
+                //Yap - (9399) Load from application path/template folder - 03-10-2018
+                string tmpPath = System.IO.Path.Combine(GlobalVariable.ApplicationPath, @"template");
+                if (System.IO.Directory.Exists(tmpPath))
+                {
+                    System.Security.Permissions.FileIOPermission fi;
+                    fi = new System.Security.Permissions.FileIOPermission(
+                        System.Security.Permissions.FileIOPermissionAccess.PathDiscovery |
+                        System.Security.Permissions.FileIOPermissionAccess.Read,
+                        tmpPath);
+                    fi.AllFiles = System.Security.Permissions.FileIOPermissionAccess.Read;
+                   
+                    System.IO.DirectoryInfo di = new System.IO.DirectoryInfo(tmpPath);
+                    foreach (string ext in SupportedExt)
+                    {
+                        System.IO.FileInfo[] fis = di.GetFiles(ext);
+                        foreach (System.IO.FileInfo finfo in fis)
+                        {                            
+                            //Yap - (9399) Add image into dictionary - 03-10-2018
+                            if (hnImgDict.ContainsKey(finfo.Name) == false)
+                            {
+                                Image tempImage = Image.FromFile(finfo.FullName);
+                                hnImgDict.Add(finfo.Name, tempImage);
+                            }
+                        }
+                    }
+                }
+            }
+            else
+            {
+                DataTable dt = ClinicMedicRecord.GetHandnoteTemplate();
+                foreach (DataRow dr in dt.Rows)
+                {
+                    byte[] imageInByteArray = new byte[0];
+                    imageInByteArray = (dr["file"] != DBNull.Value) ? (byte[])dr["file"] : new byte[0];
+
+                    Image image = ConvertByteArrayToImage(imageInByteArray);
+                    if (hnImgDict.ContainsKey(dr["name"].ToString()) == false)
+                    {
+                        //Kar Lun - (KL0065) 2020-06-03
+                        //hnImgDict.Add(dr["name"].ToString(), image);
+                        hnImgDict.Add(dr["name"].ToString() + "-" + dr["page"].ToString(), image);
+                    }
+                }
+            }
+        }
+
+
+//Enhanced
+private void LoadHandNoteImage()
+{
+    if (isLoadFromFile == true) //Yap - (9399) If load from folder - 03-10-2018
+    {
+        //Yap - (9399) Load from application path/template folder - 03-10-2018
+        string tmpPath = System.IO.Path.Combine(GlobalVariable.ApplicationPath, @"template");
+        if (System.IO.Directory.Exists(tmpPath))
+        {
+            System.Security.Permissions.FileIOPermission fi;
+            fi = new System.Security.Permissions.FileIOPermission(
+                System.Security.Permissions.FileIOPermissionAccess.PathDiscovery |
+                System.Security.Permissions.FileIOPermissionAccess.Read,
+                tmpPath);
+            fi.AllFiles = System.Security.Permissions.FileIOPermissionAccess.Read;
+
+            System.IO.DirectoryInfo di = new System.IO.DirectoryInfo(tmpPath);
+            
+            // Optimized: Use LINQ to handle multiple extensions and filter duplicates
+            var allFiles = SupportedExt
+                .SelectMany(ext => di.GetFiles(ext))
+                .Where(finfo => !hnImgDict.ContainsKey(finfo.Name))
+                .ToList();
+
+            foreach (System.IO.FileInfo finfo in allFiles)
+            {
+                //Yap - (9399) Add image into dictionary - 03-10-2018
+                Image tempImage = Image.FromFile(finfo.FullName);
+                hnImgDict.Add(finfo.Name, tempImage);
+            }
+        }
+    }
+    else
+    {
+        DataTable dt = ClinicMedicRecord.GetHandnoteTemplate();
+        
+        // Optimized: Use LINQ to filter and process DataRows
+        var imageRows = dt.AsEnumerable()
+                         .Where(dr => !hnImgDict.ContainsKey(dr["name"].ToString() + "-" + dr["page"].ToString()))
+                         .Select(dr => new 
+                         { 
+                             Key = dr["name"].ToString() + "-" + dr["page"].ToString(),
+                             Image = ConvertByteArrayToImage(
+                                 (dr["file"] != DBNull.Value) ? (byte[])dr["file"] : new byte[0]
+                             )
+                         });
+
+        foreach (var row in imageRows)
+        {
+            //Kar Lun - (KL0065) 2020-06-03
+            hnImgDict.Add(row.Key, row.Image);
+        }
+    }
+}
