@@ -1,0 +1,22 @@
+ private void LoadSpecialInstrution()
+        {
+            dt.Rows.Clear();
+            gridControl1.DataSource = null;
+            iconDict = new Dictionary<string, byte[]>();
+            dt = HosDentalLabSpecialInst.GetSpecialInst();
+            if (dt != null)
+            {
+                gridControl1.DataSource = dt;
+
+                foreach (DataRow dr in dt.Rows)
+                {
+                    if (iconDict.ContainsKey(dr["id"].ToString()) == false)
+                    {
+                        if (!dr.IsNull("icon_img"))
+                        { iconDict.Add(dr["id"].ToString(), (byte[])dr["icon_img"]); }
+                    }
+                }
+            }
+        }
+
+//Enhanced
