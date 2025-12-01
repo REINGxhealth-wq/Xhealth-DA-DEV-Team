@@ -1,0 +1,37 @@
+      public void BindNotationlegend()
+        {
+            DataTable DT = DentalChartNotation.GetNotationMasterList(ddltoothtype.Text, txtnotationtitle.Text);
+            DT.Columns.Add("toothtype2");
+            foreach (DataRow DR in DT.Rows)
+            {
+                if (DR["toothtype"].ToString() == "A")
+                {
+                    DR["toothtype2"] = "Premolar / Molar";
+                }
+                else if (DR["toothtype"].ToString() == "B")
+                {
+                    DR["toothtype2"] = "Incisor";
+                }
+                else
+                {
+                    DR["toothtype2"] = "";
+                }
+            }
+            GRVNotationMaster.DataSource = DT;
+        }
+//Enhanced
+        //REI DAS-2927 1/12/2025
+        public void BindNotationlegend()
+        {
+            DataTable DT = DentalChartNotation.GetNotationMasterList(ddltoothtype.Text, txtnotationtitle.Text);
+            DT.Columns.Add("toothtype2");
+
+            foreach (DataRow row in DT.Rows)
+            {
+                string toothType = row["toothtype"].ToString();
+                row["toothtype2"] = toothType == "A" ? "Premolar / Molar" :
+                                   toothType == "B" ? "Incisor" : "";
+            }
+
+            GRVNotationMaster.DataSource = DT;
+        }
