@@ -1,0 +1,131 @@
+   public void LoadTemplatesFromDB()
+        {
+            cbselectimg.Items.Clear();
+            if (templateDict == null)
+            { templateDict = new Dictionary<string, Image>(); }
+            else
+            { templateDict.Clear(); }
+            DataTable dt = ClinicMedicRecord.GetHandnoteTemplate();
+            List<string> tmpPaths = new List<string>();
+            foreach (DataRow dr in dt.Rows)
+            {
+                //Kar Lun - (KL0034) 2020-04-02
+                //tmpPaths.Add(dr["name"].ToString());
+
+                //if (templateDict.ContainsKey(dr["name"].ToString()) == false)
+                //{
+                //    byte[] imageInByteArray = new byte[0];
+                //    imageInByteArray = (dr["file"] != DBNull.Value) ? (byte[])dr["file"] : new byte[0];                   
+                //    Image image = ConvertByteArrayToImage(imageInByteArray);
+                //    templateDict.Add(dr["name"].ToString(), image);                   
+                //}
+                int pageCount = ClinicMedicRecord.GetTemplatePageCount(dr["name"].ToString());
+                string name = dr["name"].ToString();
+
+                if (pageCount > 1)
+                    name = dr["name"].ToString() + " Page " + dr["page"].ToString();
+
+                tmpPaths.Add(name);
+
+                if (templateDict.ContainsKey(name) == false)
+                {
+                    byte[] imageInByteArray = new byte[0];
+                    imageInByteArray = (dr["file"] != DBNull.Value) ? (byte[])dr["file"] : new byte[0];
+                    Image image = ConvertByteArrayToImage(imageInByteArray);
+                    templateDict.Add(name, image);
+                }
+            }
+            cbselectimg.Items.Add("All"); //Yap - (10114) Add 'All' to show all template with ink - 13-01-2020
+            cbselectimg.Items.AddRange(tmpPaths.ToArray());
+            
+            if (cbselectimg.Items.Count > 0)
+            {
+                cbselectimg.SelectedIndex = 0;
+                //LoadCSDetails();
+                //Yap - (10114) Show all template with ink - 13-01-2020
+                if (cbselectimg.Text == "All")
+                { LoadCSDetails2(); }
+                else
+                { LoadCSDetails3(cbselectimg.Text); }
+                panel1.VerticalScroll.Value = 0;
+            }           
+        }
+
+//Enhanced
+    public void LoadTemplatesFromDB()
+        {
+            cbselectimg.Items.Clear();
+
+            // Initialize
+            templateDict = templateDict ?? new Dictionary<string, Image>();
+            templateDict.Clear();
+
+            DataTable dt = ClinicMedicRecord.GetHandnoteTemplate();
+            if (dt == null) return;
+
+            List<string> tmpPaths = new List<string>();
+
+            // OPTIMIZATION: Cache page counts to avoid repeated DB calls
+            var pageCountCache = new Dictionary<string, int>();
+
+            foreach (DataRow dr in dt.Rows)
+            {
+                string templateName = dr["name"]?.ToString();
+                if (string.IsNullOrEmpty(templateName))
+                    continue;
+
+                string displayName = templateName;
+
+                // Get page count with caching
+                if (!pageCountCache.ContainsKey(templateName))
+                {
+                    pageCountCache[templateName] = ClinicMedicRecord.GetTemplatePageCount(templateName);
+                }
+
+                int pageCount = pageCountCache[templateName];
+
+                if (pageCount > 1)
+                {
+                    string pageNum = dr["page"]?.ToString() ?? "0";
+                    displayName = templateName + " Page " + pageNum;
+                }
+
+                tmpPaths.Add(displayName);
+
+                if (!templateDict.ContainsKey(displayName))
+                {
+                    if (dr["file"] != DBNull.Value && dr["file"] != null)
+                    {
+                        byte[] imageInByteArray = (byte[])dr["file"];
+                        if (imageInByteArray != null && imageInByteArray.Length > 0)
+                        {
+                            Image image = ConvertByteArrayToImage(imageInByteArray);
+                            if (image != null)
+                            {
+                                templateDict.Add(displayName, image);
+                            }
+                        }
+                    }
+                }
+            }
+
+            // Rest of your code remains the same
+            cbselectimg.Items.Add("All");
+            cbselectimg.Items.AddRange(tmpPaths.ToArray());
+
+            if (cbselectimg.Items.Count > 0)
+            {
+                cbselectimg.SelectedIndex = 0;
+
+                if (cbselectimg.Text == "All")
+                {
+                    LoadCSDetails2();
+                }
+                else
+                {
+                    LoadCSDetails3(cbselectimg.Text);
+                }
+
+                panel1.VerticalScroll.Value = 0;
+            }
+        }
