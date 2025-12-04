@@ -1,0 +1,116 @@
+private void btnsms_Click(object sender, EventArgs e)
+        {
+            if (ClinicSms.IsNetConnected())
+            {
+                if (ent != null)
+                {
+                    List<DataRow> ls = ent.AsEnumerable().ToList();
+
+                    //Jing Yi (DAS-1606) Check if any filtering is applied by user - 2023-04-21
+                    if (gcEntitle_grid.ActiveFilterCriteria != null)
+                    {
+                        var filteredDataView = new DataView(gcEntitle.DataSource as DataTable);
+                        filteredDataView.RowFilter = DevExpress.Data.Filtering.CriteriaToWhereClauseHelper.GetDataSetWhere(gcEntitle_grid.ActiveFilterCriteria);
+                        DataTable dt = filteredDataView.ToTable();
+                        List<string> filtered_id = new List<string>(); //To store the list of entitle id that is filtered
+                        foreach (DataRow dr in dt.Rows)
+                        {
+                            filtered_id.Add(dr["entitle_id"].ToString());
+                        }
+                        ls = ls.Where(q => filtered_id.Contains(q.Field<string>("entitle_id"))).ToList();
+                    }
+
+                    if (ls.Count > 0)
+                    {
+                        using (Sendsmsfrm smsfrm = new Sendsmsfrm("entitle", ls, -1))
+                        {
+                            smsfrm.ShowDialog(this);
+                        }
+                    }
+                    else
+                    {
+                        
+                    }
+
+                }
+                else
+                {
+                    MessageBox.Show("List is empty,please filter again", "Warning", MessageBoxButtons.OK, MessageBoxIcon.Exclamation);
+                    return;
+
+                }
+
+            }
+            else
+            {
+                MessageBox.Show("No internet connected to your Computer/Laptop", "Warning", MessageBoxButtons.OK, MessageBoxIcon.Exclamation);
+                return;
+            }
+        }
+
+
+//ENhanced
+private void btnsms_Click(object sender, EventArgs e)
+        {
+            // 1. Check internet connection
+            if (!ClinicSms.IsNetConnected())
+            {
+                MessageBox.Show("No internet connected to your Computer/Laptop",
+                               "Warning", MessageBoxButtons.OK, MessageBoxIcon.Exclamation);
+                return;
+            }
+
+            // 2. Check if data exists
+            if (ent == null || ent.Rows.Count == 0)
+            {
+                MessageBox.Show("List is empty, please filter again",
+                               "Warning", MessageBoxButtons.OK, MessageBoxIcon.Exclamation);
+                return;
+            }
+
+            // 3. Get filtered rows
+            DataRow[] rowsToSend;
+
+            if (gcEntitle_grid.ActiveFilterCriteria != null)
+            {
+                try
+                {
+                    // Try to apply the active filter
+                    string filter = DevExpress.Data.Filtering.CriteriaToWhereClauseHelper
+                        .GetDataSetWhere(gcEntitle_grid.ActiveFilterCriteria);
+
+                    if (!string.IsNullOrEmpty(filter))
+                    {
+                        rowsToSend = ent.Select(filter);
+                    }
+                    else
+                    {
+                        rowsToSend = ent.Select(); // No valid filter, get all rows
+                    }
+                }
+                catch
+                {
+                    // Filter failed, use all rows
+                    rowsToSend = ent.Select();
+                }
+            }
+            else
+            {
+                // No filter active, get all rows
+                rowsToSend = ent.Select();
+            }
+
+            // 4. Check if we have rows after filtering
+            if (rowsToSend == null || rowsToSend.Length == 0)
+            {
+                MessageBox.Show("No records match the current filter",
+                               "Information", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                return;
+            }
+
+            // 5. Open SMS form
+            using (Sendsmsfrm smsfrm = new Sendsmsfrm("entitle", rowsToSend.ToList(), -1))
+            {
+                smsfrm.ShowDialog(this);
+            }
+        }
