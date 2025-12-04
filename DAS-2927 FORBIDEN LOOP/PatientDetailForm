@@ -1,0 +1,239 @@
+private void btnsmslist_Click(object sender, EventArgs e)
+{
+    if (ClinicSms.IsNetConnected())
+    {
+        if (cplistDT != null) //Yap - (10260) Check null - 13-04-2020
+        {
+            if (cplistDT.Rows.Count != 0)
+            {
+                cplist = new List<ClinicPatient>();
+                for (int i = 0; i < cplistDT.Rows.Count; i++)
+                {
+                    ClinicPatient cp = new ClinicPatient();
+                    cp.RegDate = DateTime.Parse(cplistDT.Rows[i]["register_date"].ToString());
+                    cp.ICpassport = cplistDT.Rows[i]["icpassport"].ToString();//reader.GetString("icpassport");
+                    cp.Name = cplistDT.Rows[i]["name"].ToString();// reader.GetString("name");
+                    cp.Sex = cplistDT.Rows[i]["sex"].ToString();// reader.GetString("sex");
+                    cp.DOB = DateTime.Parse(cplistDT.Rows[i]["DOB"].ToString());// reader.GetDateTime("DOB");
+                    cp.Street = cplistDT.Rows[i]["address"].ToString();// reader.GetString("address");
+                    cp.City = cplistDT.Rows[i]["city"].ToString();// reader.GetString("city");
+                    cp.State = cplistDT.Rows[i]["state"].ToString();// reader.GetString("state");
+                    cp.Country = cplistDT.Rows[i]["country"].ToString();// reader.GetString("country");
+                    cp.Postcode = cplistDT.Rows[i]["postcode"].ToString();// reader.GetString("postcode");
+                    cp.Home = cplistDT.Rows[i]["phone_fixed"].ToString();// reader.GetString("phone_fixed");
+                    cp.Mobile = cplistDT.Rows[i]["phone_mobile"].ToString();// reader.GetString("phone_mobile");
+                    cp.Remark = cplistDT.Rows[i]["remark"].ToString();// reader.GetString("remark");
+                    cp.Medicalillness = cplistDT.Rows[i]["medical_illness"].ToString();// reader.GetString("medical_illness");
+                    cp.Occupation = cplistDT.Rows[i]["occupation"].ToString();// reader.GetString("occupation");
+                    cp.Race = cplistDT.Rows[i]["race"].ToString();// reader.GetString("race");
+                    cp.Billingtype = cplistDT.Rows[i]["BillingStatus"].ToString();// reader.GetString("BillingStatus");
+                                                                                  //darius 02122009
+                                                                                  // load allegy(ies)
+
+                    //Jing Yi (DAS-1824) Remarked these part that is heavy to load - 2023-08-09
+                    //cp.AllergyId = ClinicPatient.LoadAllergies(cp.ICpassport);
+                    //cp.RelationList = ClinicPatient.LoadRelation(cp.ICpassport);
+                    //cp.Photo = ClinicPatient.LoadPhoto(cp.ICpassport);
+                    if (!string.IsNullOrEmpty(cplistDT.Rows[i]["outstanding_bal"].ToString()))
+                    {
+                        cp.Outstanding_Balance = cplistDT.Rows[i]["outstanding_bal"].ToString();
+                    }
+                    else cp.Outstanding_Balance = "0";
+                    if (!string.IsNullOrEmpty(cplistDT.Rows[i]["upcoming_apt"].ToString()) && cplistDT.Rows[i]["upcoming_apt"].ToString() == "true")
+                    {
+                        cp.Upcoming_Appointment = true;
+                    }
+                    else cp.Upcoming_Appointment = false;
+
+                    if (!string.IsNullOrEmpty(cplistDT.Rows[i]["incomplete_tp"].ToString()) && cplistDT.Rows[i]["incomplete_tp"].ToString() == "true")
+                    {
+                        cp.Incomplete_Treatment = true;
+                    }
+                    else cp.Incomplete_Treatment = false;
+                    cplist.Add(cp);
+                }
+
+                //Jing Yi (DAS-1606) Check if any filtering is applied by user - 2023-04-21
+                if (gridView1.ActiveFilterCriteria != null)
+                {
+                    var filteredDataView = new DataView(gcPatient.DataSource as DataTable);
+                    filteredDataView.RowFilter = DevExpress.Data.Filtering.CriteriaToWhereClauseHelper.GetDataSetWhere(gridView1.ActiveFilterCriteria);
+                    DataTable dt = filteredDataView.ToTable();
+                    List<string> filtered_id = new List<string>(); //To store the list of appt id that is filtered
+                    foreach (DataRow dr in dt.Rows)
+                    {
+                        filtered_id.Add(dr["ic"].ToString());
+                    }
+                    cplist = cplist.Where(i => filtered_id.Contains(i.ICpassport)).ToList(); //Only keep the appts that is filtered 
+                }
+
+                using (Sendsmsfrm smsfrm = new Sendsmsfrm(cplist, 6))
+                {
+                    smsfrm.ShowDialog(this); //Yap - (DAS-29) Change to showdialog - 12-09-2020
+                }
+            }
+            else
+            {
+                MessageBox.Show("List is empty,please filter again", "Warning", MessageBoxButtons.OK, MessageBoxIcon.Exclamation);
+                return;
+            }
+        }
+        else
+        {
+            MessageBox.Show("List is empty,please filter again", "Warning", MessageBoxButtons.OK, MessageBoxIcon.Exclamation);
+            return;
+        }
+    }
+    else
+    {
+        MessageBox.Show("Internet is not available. Please check your network connection.", "Warning", MessageBoxButtons.OK, MessageBoxIcon.Exclamation);
+        return;
+    }
+}
+
+//enhance 
+
+  private void btnsmslist_Click(object sender, EventArgs e)
+        {
+            // 1. Check internet connection first
+            if (!ClinicSms.IsNetConnected())
+            {
+                MessageBox.Show("Internet is not available. Please check your network connection.",
+                               "Warning", MessageBoxButtons.OK, MessageBoxIcon.Exclamation);
+                return;
+            }
+
+            // 2. Validate data source
+            if (cplistDT == null || cplistDT.Rows.Count == 0)
+            {
+                MessageBox.Show("List is empty, please filter again",
+                               "Warning", MessageBoxButtons.OK, MessageBoxIcon.Exclamation);
+                return;
+            }
+
+            // 3. Get filtered IC list (if filter is active)
+            List<string> filteredICList = GetFilteredICList();
+
+            // 4. Create patient list
+            List<ClinicPatient> patients = CreatePatientList(cplistDT, filteredICList);
+
+            if (patients.Count == 0)
+            {
+                MessageBox.Show("No patients match the current filter",
+                               "Information", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                return;
+            }
+
+            // 5. Open SMS form
+            using (Sendsmsfrm smsfrm = new Sendsmsfrm(patients, 6))
+            {
+                smsfrm.ShowDialog(this);
+            }
+        }
+
+        private List<string> GetFilteredICList()
+        {
+            if (gridView1.ActiveFilterCriteria == null)
+                return null; // No filter, return null to indicate all rows
+
+            try
+            {
+                // Use DataTable.Select() instead of DataView for better performance
+                string filter = DevExpress.Data.Filtering.CriteriaToWhereClauseHelper
+                    .GetDataSetWhere(gridView1.ActiveFilterCriteria);
+
+                if (string.IsNullOrEmpty(filter))
+                    return null;
+
+                DataTable sourceTable = gcPatient.DataSource as DataTable;
+                if (sourceTable == null)
+                    return null;
+
+                DataRow[] filteredRows = sourceTable.Select(filter);
+
+                // Use HashSet for O(1) lookups
+                var filteredICSet = new HashSet<string>();
+                foreach (DataRow dr in filteredRows)
+                {
+                    string ic = dr["ic"]?.ToString();
+                    if (!string.IsNullOrEmpty(ic))
+                        filteredICSet.Add(ic);
+                }
+
+                return filteredICSet.ToList();
+            }
+            catch
+            {
+                return null; // If filter fails, return null to use all data
+            }
+        }
+
+        private List<ClinicPatient> CreatePatientList(DataTable dataTable, List<string> filteredICList)
+        {
+            var patients = new List<ClinicPatient>();
+            bool useFilter = filteredICList != null && filteredICList.Count > 0;
+
+            // Convert filtered list to HashSet for faster lookups
+            var filteredICSet = useFilter ? new HashSet<string>(filteredICList) : null;
+
+            for (int i = 0; i < dataTable.Rows.Count; i++)
+            {
+                DataRow dr = dataTable.Rows[i];
+
+                // Skip if not in filtered list
+                string ic = dr["icpassport"]?.ToString();
+                if (useFilter && (string.IsNullOrEmpty(ic) || !filteredICSet.Contains(ic)))
+                    continue;
+
+                // Create patient object
+                ClinicPatient patient = CreateClinicPatient(dr);
+                patients.Add(patient);
+            }
+
+            return patients;
+        }
+
+        private ClinicPatient CreateClinicPatient(DataRow dr)
+        {
+            var cp = new ClinicPatient();
+
+            // Parse dates safely
+            DateTime tempDate;
+            if (DateTime.TryParse(dr["register_date"]?.ToString(), out tempDate))
+                cp.RegDate = tempDate;
+
+            if (DateTime.TryParse(dr["DOB"]?.ToString(), out tempDate))
+                cp.DOB = tempDate;
+
+            // Set string properties
+            cp.ICpassport = dr["icpassport"]?.ToString() ?? "";
+            cp.Name = dr["name"]?.ToString() ?? "";
+            cp.Sex = dr["sex"]?.ToString() ?? "";
+            cp.Street = dr["address"]?.ToString() ?? "";
+            cp.City = dr["city"]?.ToString() ?? "";
+            cp.State = dr["state"]?.ToString() ?? "";
+            cp.Country = dr["country"]?.ToString() ?? "";
+            cp.Postcode = dr["postcode"]?.ToString() ?? "";
+            cp.Home = dr["phone_fixed"]?.ToString() ?? "";
+            cp.Mobile = dr["phone_mobile"]?.ToString() ?? "";
+            cp.Remark = dr["remark"]?.ToString() ?? "";
+            cp.Medicalillness = dr["medical_illness"]?.ToString() ?? "";
+            cp.Occupation = dr["occupation"]?.ToString() ?? "";
+            cp.Race = dr["race"]?.ToString() ?? "";
+            cp.Billingtype = dr["BillingStatus"]?.ToString() ?? "";
+
+            // Set boolean properties
+            cp.Upcoming_Appointment = dr["upcoming_apt"]?.ToString() == "true";
+            cp.Incomplete_Treatment = dr["incomplete_tp"]?.ToString() == "true";
+
+            // Set outstanding balance
+            string outstandingBal = dr["outstanding_bal"]?.ToString();
+            cp.Outstanding_Balance = string.IsNullOrEmpty(outstandingBal) ? "0" : outstandingBal;
+
+            // Heavy loading operations commented out as per original
+            // cp.AllergyId = ClinicPatient.LoadAllergies(cp.ICpassport);
+            // cp.RelationList = ClinicPatient.LoadRelation(cp.ICpassport);
+            // cp.Photo = ClinicPatient.LoadPhoto(cp.ICpassport);
+
+            return cp;
+        }
