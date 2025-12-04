@@ -1,0 +1,160 @@
+ private void LoadHandNoteImage()
+        {
+            try
+            {
+                if (isLoadFromFile == true)
+                {
+                    //Yap - (9399) Load from application path/template folder - 03-10-2018
+                    string tmpPath = System.IO.Path.Combine(GlobalVariable.ApplicationPath, @"template");
+                    if (System.IO.Directory.Exists(tmpPath))
+                    {
+                        System.Security.Permissions.FileIOPermission fi;
+                        fi = new System.Security.Permissions.FileIOPermission(
+                            System.Security.Permissions.FileIOPermissionAccess.PathDiscovery |
+                            System.Security.Permissions.FileIOPermissionAccess.Read,
+                            tmpPath);
+                        fi.AllFiles = System.Security.Permissions.FileIOPermissionAccess.Read;
+
+                        System.IO.DirectoryInfo di = new System.IO.DirectoryInfo(tmpPath);
+                        foreach (string ext in SupportedExt)
+                        {
+                            System.IO.FileInfo[] fis = di.GetFiles(ext);
+                            foreach (System.IO.FileInfo finfo in fis)
+                            {
+                                //Yap - (9399) Add image into usercontrol - 03-10-2018
+                                Image tempImage = Image.FromFile(finfo.FullName);
+                                HandNoteSection hns = new HandNoteSection(finfo.Name, tempImage, this);
+                                hns.Dock = DockStyle.Fill;
+                                Panel pnl = new Panel();
+                                pnl.Width = 320;
+                                pnl.Height = 300;
+                                pnl.Controls.Add(hns);
+                                pnl.Name = "pnl" + finfo.Name;
+                                flowLayoutPanel1.Controls.Add(pnl);                                
+                            }
+                        }
+                    }
+                }
+                else
+                {
+                    DataTable dt = ClinicMedicRecord.GetHandnoteTemplate();
+                    foreach (DataRow dr in dt.Rows)
+                    {
+                        byte[] imageInByteArray = new byte[0];
+                        imageInByteArray = (dr["file"] != DBNull.Value) ? (byte[])dr["file"] : new byte[0];
+
+                        Image image = ResizeImage(ConvertByteArrayToImage(imageInByteArray)); //Kar Lun - (KL0068) 2020-06-10
+
+                        //Kar Lun - (KL0065) 2020-06-03
+                        //HandNoteSection hns = new HandNoteSection(dr["name"].ToString(), image, this);
+                        HandNoteSection hns = new HandNoteSection(dr["name"].ToString() + "-" + dr["page"].ToString(), image, this);
+
+                        hns.Dock = DockStyle.Fill;
+                        Panel pnl = new Panel();
+                        pnl.Width = 320;
+                        pnl.Height = 300;
+                        pnl.Controls.Add(hns);
+
+                        //Kar Lun - (KL0065) 2020-06-03
+                        //pnl.Name = "pnl" + dr["name"].ToString();
+                        pnl.Name = "pnl" + dr["name"].ToString() + "-" + dr["page"].ToString();
+
+                        flowLayoutPanel1.Controls.Add(pnl);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Logger.ErrorException("Failed to load hand note image.", ex);
+                Base.ErrorReportForm.Show("Failed to load hand note image", ex, MethodBase.GetCurrentMethod());
+            }
+        }
+
+//enhanced
+
+ private void LoadHandNoteImage()
+        {
+            try
+            {
+                // Clear old panels
+                flowLayoutPanel1.Controls.Clear();
+
+                if (isLoadFromFile)
+                {
+                    LoadFromFilesSimple();
+                }
+                else
+                {
+                    LoadFromDBSimple();
+                }
+            }
+            catch (Exception ex)
+            {
+                Logger.ErrorException("Failed to load hand note image.", ex);
+                Base.ErrorReportForm.Show("Failed to load hand note image", ex, MethodBase.GetCurrentMethod());
+            }
+        }
+
+        private void LoadFromFilesSimple()
+        {
+            string templatePath = Path.Combine(GlobalVariable.ApplicationPath, "template");
+            if (!Directory.Exists(templatePath)) return;
+
+            // Get all files at once
+            var allFiles = new List<FileInfo>();
+            foreach (string ext in SupportedExt)
+            {
+                allFiles.AddRange(new DirectoryInfo(templatePath).GetFiles(ext));
+            }
+
+            foreach (var file in allFiles)
+            {
+                try
+                {
+                    using (var stream = File.OpenRead(file.FullName))
+                    {
+                        var image = Image.FromStream(stream);
+                        AddHandNotePanel(file.Name, image);
+                    }
+                }
+                catch { } // Skip bad files
+            }
+        }
+
+        private void LoadFromDBSimple()
+        {
+            DataTable dt = ClinicMedicRecord.GetHandnoteTemplate();
+            if (dt == null) return;
+
+            for (int i = 0; i < dt.Rows.Count; i++)
+            {
+                var dr = dt.Rows[i];
+                try
+                {
+                    byte[] data = dr["file"] as byte[] ?? new byte[0];
+                    if (data.Length == 0) continue;
+
+                    var image = ResizeImage(ConvertByteArrayToImage(data));
+                    string name = $"{dr["name"]}-{dr["page"]}";
+                    AddHandNotePanel(name, image);
+                }
+                catch { } // Skip bad rows
+            }
+        }
+
+        private void AddHandNotePanel(string name, Image image)
+        {
+            var hns = new HandNoteSection(name, image, this);
+            hns.Dock = DockStyle.Fill;
+
+            var pnl = new Panel
+            {
+                Name = "pnl" + name,
+                Width = 320,
+                Height = 300,
+                Controls = { hns }
+            };
+
+            flowLayoutPanel1.Controls.Add(pnl);
+        }
+
