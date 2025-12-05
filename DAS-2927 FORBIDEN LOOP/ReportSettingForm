@@ -1,0 +1,43 @@
+private void LoadReportSubReportList(string reportID)
+{
+    gridControl2.DataSource = null;
+    subReportList.Clear();
+    DataTable dt = ClinicReport.GetAllSubReport(this._id.ToString());
+    if (dt != null)
+    {
+        foreach (DataRow dr in dt.Rows)
+        {
+            subReportList.Add(dr["ID"].ToString());
+        }
+        gridControl2.DataSource = dt;
+    }           
+}
+
+//Enhanced
+private void LoadReportSubReportList(string reportID)
+{
+    // Clear UI and data
+    gridControl2.DataSource = null;
+    subReportList.Clear();
+    
+    // Get data
+    DataTable dt = ClinicReport.GetAllSubReport(this._id.ToString());
+    
+    if (dt != null && dt.Rows.Count > 0)
+    {
+        // Pre-allocate list for better performance
+        if (subReportList is List<string> stringList)
+        {
+            stringList.Capacity = Math.Max(stringList.Capacity, dt.Rows.Count);
+        }
+        
+        // Add IDs to list
+        for (int i = 0; i < dt.Rows.Count; i++)
+        {
+            subReportList.Add(dt.Rows[i]["ID"].ToString());
+        }
+        
+        // Bind to grid
+        gridControl2.DataSource = dt;
+    }
+}
