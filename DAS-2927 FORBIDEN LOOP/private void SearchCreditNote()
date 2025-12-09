@@ -1,0 +1,59 @@
+ private void SearchCreditNote()
+        {
+            string doneby, settledby = "";
+
+            if (cboDoneBy.SelectedIndex == 0 || cboDoneBy.Text == "")
+                doneby = "";
+            else
+                doneby = cboDoneBy.Text;
+
+            if (cboSettledBy.SelectedIndex == 0 || cboSettledBy.Text == "")
+                settledby = "";
+            else
+                settledby = cboSettledBy.Text;
+
+            //Yap - (10006) get search ic type - 20-11-2019
+            string searchICType = "ic";
+            if (GlobalVariable.IsPet)
+            { searchICType = "cus_ic"; }
+
+            DataTable dt = new DataTable();
+            KeyValuePair<string, string> item = (KeyValuePair<string, string>)cboBillingStatus.SelectedItem;
+            KeyValuePair<string, string> paymentitem = (KeyValuePair<string, string>)cboPaymethod.SelectedItem;
+            //Yap - (10006) Pass in search IC type - 20-11-2019
+            dt = CreditNote.GetDeletedCreditNoteDetail(rbIC.Checked, tbIC.Text, rbDate.Checked, Data.DateTimeHelper.GetFromDatePart(dtFrom.Value),
+                Data.DateTimeHelper.GetToDatePart(dtTo.Value), item.Key, paymentitem.Key, doneby, settledby, searchICType);
+
+            double totalAmt = 0;
+            Int32 totalRow = 0; //Yap - (9706) Get row number - 30-05-2019
+            if (dt != null)
+            {
+                //Kar Lun - 10-05-2019
+                int topRowIndex = gridView1.TopRowIndex;
+                int focusedRowHandle = gridView1.FocusedRowHandle;
+
+                gridControl1.DataSource = dt;
+                gridControl1.LevelTree.Nodes.Add("CreditNote_Items1", gridView2);
+                gridControl1.LevelTree.Nodes.Add("CreditNote_Payment1", gridView3);
+                gridView2.ViewCaption = "Credit Note Items";
+                gridView2.SynchronizeClones = true;
+                gridView3.ViewCaption = "Credit Note Payment";
+                gridView3.SynchronizeClones = true;
+
+                gridView1.FocusedRowHandle = focusedRowHandle;
+                gridView1.TopRowIndex = topRowIndex;
+                //gridView1.ExpandMasterRow(focusedRowHandle); //Yap - (9756) Not expand - 05-07-2019
+
+
+                foreach (DataRow dr in dt.Rows)
+                {
+                    //totalAmt += Double.Parse(dr["pay_total"].ToString());
+                    totalAmt += Double.Parse(dr["total"].ToString()); //Yap - (10006) Calculate total amount using amount - 21-11-2019
+                }
+                totalRow = dt.Rows.Count; //Yap - (9706) Get Row number - 30-05-2019
+            }
+            else
+            { gridControl1.DataSource = null; }
+        }
+
+//enchance 
